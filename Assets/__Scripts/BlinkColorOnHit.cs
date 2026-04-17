@@ -38,7 +38,7 @@ public class BlinkColorOnHit : MonoBehaviour
     void OnCollisionEnter(Collision coll)
     {
         // Check for collisions with ProjectileHero
-        ProjectileHero p = coll.gameObject.GetComponent<ProjectileHero>();
+        ProjectileHero p = coll.gameObject.GetComponent<ProjectileHero>() ?? coll.gameObject.GetComponent<ProjectileHero>();
         if (p != null)
         {                                                  // f
             if (bndCheck != null && !bndCheck.isOnScreen)
@@ -54,7 +54,7 @@ public class BlinkColorOnHit : MonoBehaviour
     ///  materials array to blinkColor, sets showingColor to true, and sets the
     ///  time that the colors should be reverted.
     /// </summary
-    void SetColors()
+    public void SetColors()
     {
         foreach (Material m in materials)
         {
@@ -68,7 +68,7 @@ public class BlinkColorOnHit : MonoBehaviour
     /// Reverts all materials in the materials array back to their original color
     ///  and sets showingColor to false.
     /// </summary
-    void RevertColors()
+    public void RevertColors()
     {
         for (int i = 0; i < materials.Length; i++)
         {

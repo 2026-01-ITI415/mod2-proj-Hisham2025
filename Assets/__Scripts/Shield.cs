@@ -33,4 +33,15 @@ public class Shield : MonoBehaviour
         float rZ = -(rotationsPerSecond * Time.time * 360) % 360f;               // e
         transform.rotation = Quaternion.Euler(0, 0, rZ);
     }
+
+
+    void OnTriggerEnter(Collider other)
+        {
+            {
+            if (other.CompareTag("Enemy"))
+                {
+                CameraShake.Instance.Shake(0.2f, 0.15f);
+                }
+            }
+        }
 }

@@ -4,9 +4,11 @@ using UnityEngine;
 
 [RequireComponent(typeof(BoundsCheck))]
 public class ProjectileHero : MonoBehaviour
+
 {
     private BoundsCheck bndCheck;
     private Renderer rend;
+    public Vector2 desiredDirection;
 
     [Header("Dynamic")]
     public Rigidbody rigid;
@@ -29,14 +31,32 @@ public class ProjectileHero : MonoBehaviour
         rigid = GetComponent<Rigidbody>();
     }
 
-    void Update()
+void Update()
+{
+    if (bndCheck.LocIs(BoundsCheck.eScreenLocs.offUp))
     {
-        if (bndCheck.LocIs(BoundsCheck.eScreenLocs.offUp))
-        {
-            Destroy(gameObject);
-        }
+        Destroy(gameObject);
+        return;
     }
 
+    Vector2 v = rigid.linearVelocity;
+
+    if (v.sqrMagnitude > 0.01f)
+    {
+        float angle = Mathf.Atan2(v.y, v.x) * Mathf.Rad2Deg;
+        float targetZ = angle - 90f;
+
+        float turnSpeed = 720f; // degrees per second (tweak this)
+
+        float newZ = Mathf.MoveTowardsAngle(
+            transform.eulerAngles.z,
+            targetZ,
+            turnSpeed * Time.deltaTime
+        );
+
+        transform.rotation = Quaternion.Euler(0, 0, newZ);
+    }
+}
     /// <summary>
     /// Sets the _type private field and colors this projectile to match the 
     ///   WeaponDefinition.
@@ -54,8 +74,8 @@ public class ProjectileHero : MonoBehaviour
     /// </summary>
     public Vector3 vel
     {
-        get { return rigid.velocity; }
-        set { rigid.velocity = value; }
+        get { return rigid.linearVelocity; }
+        set { rigid.linearVelocity = value; }
     }
 
 }

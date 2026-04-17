@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 6089092828735047604}
   m_Layer: 7
   m_Name: Enemy_2
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -67,10 +67,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4070209521177695457}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -117,10 +117,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c99fab975feb4c0caca1e6e2b108867, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  audioSource: {fileID: 0}
+  enemyDeathSound: {fileID: 8300000, guid: 6a81ca39e09d6664f98792766a5ffb74, type: 3}
+  explosionPrefab: {fileID: 1000011128802252, guid: 96730f8640590934eacb6f860058e7f9, type: 3}
   speed: 10
   fireRate: 0.3
-  health: 10
+  health: 1
   score: 100
+  powerUpDropChance: 0.3
+  deathVolume: 0.75
   lifeTime: 10
   sinEccentricity: 0.6
   rotCurve:

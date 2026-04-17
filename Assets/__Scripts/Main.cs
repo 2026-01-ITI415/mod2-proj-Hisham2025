@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;   // Enables the loading & reloading of scenes
@@ -83,7 +82,7 @@ public class Main : MonoBehaviour
     {
         // Reload __Scene_0 to restart the game
         // "__Scene_0" below starts with 2 underscores and ends with a zero.
-        SceneManager.LoadScene("__Scene_0");                               // d
+        SceneManager.LoadScene("__Scene_1");                               // d
     }
 
     static public void HERO_DIED()

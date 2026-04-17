@@ -1,9 +1,43 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Hero : MonoBehaviour
 {
+
+    public Weapon weapon;
+
+    void Start()
+    {
+        Debug.Log(weapon.nextShotTime);
+        // Capture the desired max volume from the AudioSource inspector value
+        if (laserBeamAudioSource != null)
+        {
+            _laserBeamTargetVolume = laserBeamAudioSource.volume;
+        }
+    }
+
+
+    public AudioSource audioSource;
+    public AudioClip shotSound;
+    public AudioClip powerUpAbsorbSound;
+    public AudioClip heroHitSound;
+
+    public AudioSource laserAudioSource;
+    public AudioClip laserSound;
+
+    public AudioSource laserBeamAudioSource;
+    public AudioClip laserBeamSound;
+
+    [Header("Audio Settings")]
+    [Tooltip("Time in seconds to fade in the laser beam audio when Space is pressed")]
+    public float laserBeamFadeInTime = 0.15f;
+
+    // Runtime state for beam fade
+    private Coroutine _laserBeamFadeCoroutine = null;
+    private float _laserBeamTargetVolume = 1f;
 
     static public Hero S { get; private set; }  // Singleton property    // a
 
@@ -14,7 +48,15 @@ public class Hero : MonoBehaviour
     public float pitchMult = 30;
     public GameObject projectilePrefab;
     public float projectileSpeed = 40;
+    public float powerUpVolume = 5f;
     public Weapon[] weapons;
+
+    [Header("Camera Shake Settings")]
+    public float duration = 1f; // Duration of the shake effect
+    public float magnitude = 2f; // Magnitude of the shake effect
+
+    public float fireshakeduration = 0.2f; // Duration of the shake effect when firing
+    public float fireshakemagnitude = 0.1f; // Magnitude of the shake
 
     [Header("Dynamic")]
     [Range(0, 4)]
@@ -27,8 +69,6 @@ public class Hero : MonoBehaviour
     // Declare a new delegate type WeaponFireDelegate
     public delegate void WeaponFireDelegate();                                // a     // Create a WeaponFireDelegate event named fireEvent.
     public event WeaponFireDelegate fireEvent;
-
-
 
     void Awake()
     {
@@ -62,34 +102,63 @@ public class Hero : MonoBehaviour
         // Rotate the ship to make it feel more dynamic                       // e
         transform.rotation = Quaternion.Euler(vAxis * pitchMult, hAxis * rollMult, 0);
 
-        // Allow the ship to fire
-        //if (Input.GetKeyDown(KeyCode.Space))
-        //{
-        //    TempFire();
-        //}
+        // Beam audio: play looping beam while Space is held; stop immediately on release
+        if (laserBeamAudioSource != null)
+        {
+            bool shouldPlayBeam = (weapon != null && weapon.type == eWeaponType.laser && Input.GetKey(KeyCode.Space));
+            if (shouldPlayBeam)
+            {
+                StartBeam();
+            }
+            else
+            {
+                StopBeam();
+            }
+        }
 
         // Use the fireEvent to fire Weapons when the Spacebar is pressed.
         if (Input.GetAxis("Jump") == 1 && fireEvent != null)
         {
-            fireEvent();
+            if (Input.GetAxis("Jump") == 1 && fireEvent != null)
+{
+    // Only fire if the gun says it's allowed
+    if (Time.time >= weapon.nextShotTime)
+
+    {
+        // Fire the shot
+        fireEvent();
+   
+        // Update next shot time
+        weapon.nextShotTime = Time.time + weapon.def.delayBetweenShots;
+
+        if (weapon.type == eWeaponType.laser && Input.GetKey(KeyCode.Space))
+        {
+            if (!laserAudioSource.isPlaying || Input.GetKeyDown(KeyCode.Space))
+                laserAudioSource.PlayOneShot(laserSound);
+        }
+
+        else
+
+        // Play sound only once per allowed shot
+        {
+            audioSource.PlayOneShot(shotSound);
+        }
+
+        // Camera shake
+        CameraShake.Instance.Shake(fireshakeduration, fireshakemagnitude);
+    }
+}
+            {
+            CameraShake.Instance.Shake(fireshakeduration, fireshakemagnitude);
+        }
+            
         }
 
     }
 
 
-    //void TempFire()
-    //{
-    //    GameObject projGO = Instantiate<GameObject>(projectilePrefab);
-    //    projGO.transform.position = transform.position;
-    //    Rigidbody rigidB = projGO.GetComponent<Rigidbody>();
-    //    //rigidB.velocity = Vector3.up * projectileSpeed;
+  
 
-    //    ProjectileHero proj = projGO.GetComponent<ProjectileHero>();         // h
-    //    proj.type = eWeaponType.blaster;
-    //    float tSpeed = Main.GET_WEAPON_DEFINITION(proj.type).velocity;
-    //    rigidB.velocity = Vector3.up * tSpeed;
-
-    //}
 
     void OnTriggerEnter(Collider other)
     {
@@ -107,7 +176,12 @@ public class Hero : MonoBehaviour
         if (enemy != null)
         {  // If the shield was triggered by an enemy
             shieldLevel--;        // Decrease the level of the shield by 1
-            Destroy(go);          // … and Destroy the enemy                  // f
+            Destroy(go);
+            {
+                CameraShake.Instance.Shake(duration, magnitude);
+                audioSource.PlayOneShot(heroHitSound);
+                //damage logic...
+            }          // … and Destroy the enemy                  // f
         }
         else if (pUp != null)
         {
@@ -127,9 +201,10 @@ public class Hero : MonoBehaviour
             _shieldLevel = Mathf.Min(value, 4);                             // d
             // If the shield is going to be set to less than zero…
             if (value < 0)
-            {                                                  // e
+            {   
+                Main.HERO_DIED();                                               // e
                 Destroy(this.gameObject);  // Destroy the Hero
-                Main.HERO_DIED();
+                
             }
         }
     }
@@ -163,9 +238,11 @@ public class Hero : MonoBehaviour
 
     public void AbsorbPowerUp(PowerUp pUp)
     {
+        audioSource.PlayOneShot(powerUpAbsorbSound, powerUpVolume);
         Debug.Log("Absorbed PowerUp: " + pUp.type);                         // b
         switch (pUp.type)
         {
+            
             case eWeaponType.shield:                                              // a 
                 shieldLevel++;
                 break;
@@ -189,6 +266,67 @@ public class Hero : MonoBehaviour
 
         }
         pUp.AbsorbedBy(this.gameObject);
+    }
+
+    // Start the beam with a fade-in sound effect
+    private void StartBeam()
+    {
+        if (laserBeamAudioSource == null) return;
+
+        if (_laserBeamFadeCoroutine != null)
+        {
+            StopCoroutine(_laserBeamFadeCoroutine);
+            _laserBeamFadeCoroutine = null;
+        }
+
+        if (!laserBeamAudioSource.isPlaying)
+        {
+            laserBeamAudioSource.clip = laserBeamSound;
+            laserBeamAudioSource.loop = true;
+            laserBeamAudioSource.volume = 0f;
+            laserBeamAudioSource.Play();
+        }
+
+        _laserBeamFadeCoroutine = StartCoroutine(FadeAudioTo(laserBeamAudioSource, _laserBeamTargetVolume, laserBeamFadeInTime));
+    }
+
+    // Stop the beam immediately
+    private void StopBeam()
+    {
+        if (laserBeamAudioSource == null) return;
+
+        if (_laserBeamFadeCoroutine != null)
+        {
+            StopCoroutine(_laserBeamFadeCoroutine);
+            _laserBeamFadeCoroutine = null;
+        }
+
+        if (laserBeamAudioSource.isPlaying)
+        {
+            laserBeamAudioSource.Stop();
+            laserBeamAudioSource.loop = false;
+            laserBeamAudioSource.volume = _laserBeamTargetVolume;
+        }
+    }
+
+    private IEnumerator FadeAudioTo(AudioSource src, float target, float duration)
+    {
+        float start = src.volume;
+        float t = 0f;
+        if (duration <= 0f)
+        {
+            src.volume = target;
+            _laserBeamFadeCoroutine = null;
+            yield break;
+        }
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            src.volume = Mathf.Lerp(start, target, t / duration);
+            yield return null;
+        }
+        src.volume = target;
+        _laserBeamFadeCoroutine = null;
     }
 
 }
